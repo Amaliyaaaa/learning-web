@@ -1,0 +1,16 @@
+# docker-compose.local.yml - для локальной разработки
+services:
+  backend:
+    build:
+      context: .
+    container_name: local-backend-server
+    # Команда выполняется из /app/backend, как указано в WORKDIR
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Монтируем всё так же, как и в Dockerfile
+      - ./backend:/app/backend
+      - ./public:/app/public
+      # Анонимный том теперь относится к подпапке
+      - /app/backend/node_modules

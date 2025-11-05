@@ -1,0 +1,12 @@
+# Зависимости
+node_modules
+# Локальная конфигурация
+.env
+# Логи
+*.log
+npm-debug.log*
+# Системные файлы
+.DS_Store
+# Файлы IDE
+.idea/
+.vscode/

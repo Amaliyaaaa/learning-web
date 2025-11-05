@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ЛР №7 - Фронтенд</title>
+</head>
+
+<body>
+    <h1>Тестовый фронтенд для ЛР №7</h1>
+    <p>Данные от /api/lab7/task1: <strong id="task1-data">Загрузка...</strong></p>
+    <p>Данные от /api/lab7/task2: <strong id="task2-data">Загрузка...</strong></p>
+
+    <script>
+        
+        const app1 = async () => {
+            try {
+                // Запрос к первому заданию
+                const response1 = await fetch('/api/lab7/task1');
+                if (!response1.ok) throw new Error('Network response was not ok for task1');
+                const data1 = await response1.json();
+                document.getElementById('task1-data').textContent = data1.status;
+
+
+            } catch (error) {
+                console.error('Ошибка при загрузке данных:', error);
+                document.getElementById('task1-data').textContent = 'Ошибка!';
+
+            }
+        };
+
+
+        const app2 = async () => {
+            try {
+                // Запрос ко второму заданию
+                const response2 = await fetch('/api/lab7/task2');
+                if (!response2.ok) throw new Error('Network response was not ok for task2');
+                const data2 = await response2.json();
+                document.getElementById('task2-data').textContent = JSON.stringify(data2.data);
+
+
+            } catch (error) {
+                console.error('Ошибка при загрузке данных:', error);
+                document.getElementById('task2-data').textContent = 'Ошибка!';
+            }
+        };
+
+        app1();
+        app2();
+
+    </script>
+</body>
+
+</html>
