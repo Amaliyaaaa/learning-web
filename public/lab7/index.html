@@ -5,9 +5,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Лабораторная 7, ссылки на задания. Ибрагимова А.Ф., ИТ2301</title>
+    <link rel="stylesheet" href="/stylebase/styles.css">
 </head>
 
 <body>
+    <header>
+        <a href="/#info">Личная информация</a>
+        <a href="/#tasks">Лабораторные работы</a>
+        <a href="/#progress">Прогресс освоения дисциплины</a>
+        <a href="/#project">Веб-проект</a>
+    </header>
+    
+    <main>
+        <section id="info">
+            <h2>Личная информация</h2>
+            <div class="info-card">
+                <div class="info-text">
+                    <h2 class="fullname">Ибрагимова Амалия Фуадовна</h2>
+                    <p class="group">ИТ2301, староста</p>
+                    <p class="email">Почта: <a href="mailto:i.amaliya.f@gmail.com">i.amaliya.f@gmail.com</a></p>
+                    <p class="tilda"><a href="/lab1/task10/index.html" target="_blank">Моя страница на Tilda</a></p>
+                </div>
+            </div>
+        </section>
+    
+        <section id="tasks">
+            <h2>Задания лабораторной работы 6</h2>
+            <ul class="tasks-grid">
+                <li><a href="/lab7/task1/">Задание 1</a></li>
+                <li><a href="/lab7/task2/">Задание 2</a></li>
+            </ul>
+        </section>
+    </main>
+    <footer class="footer__section">
+        <p class="footer-title">&copy;&ensp;Ибрагимова Амалия, 2025</p>
+    </footer>
+
     <h1>Тестовый фронтенд для ЛР №7</h1>
     <p>Данные от /api/lab7/task1: <strong id="task1-data">Загрузка...</strong></p>
     <p>Данные от /api/lab7/task2: <strong id="task2-data">Загрузка...</strong></p>
