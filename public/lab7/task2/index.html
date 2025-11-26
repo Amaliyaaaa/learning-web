@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Задание 2: Форма пользователя - ЛР №7</title>
+</head>
+
+<body>
+    <div class="header">
+        <h1>Форма пользователя</h1>
+        <p>Задание 2 - Лабораторная работа №7</p>
+        <div class="nav">
+            <a href="/lab7/" class="nav-btn">Назад к ЛР7</a>
+            <a href="/" class="nav-btn">На главную</a>
+        </div>
+    </div>
+
+    <form id="userForm">
+        <!-- ФИО -->
+        <div class="form-section">
+            <h2 class="section-title">Личная информация</h2>
+
+            <div class="form-group">
+                <div class="form-row">
+                    <div>
+                        <label for="lastname" class="required">Фамилия</label>
+                        <input type="text" id="lastname" name="lastname" required placeholder="Введите фамилию"
+                            value="Плотников">
+                    </div>
+                    <div>
+                        <label for="firstname" class="required">Имя</label>
+                        <input type="text" id="firstname" name="firstname" required placeholder="Введите имя"
+                            value="Александр">
+                    </div>
+                    <div>
+                        <label for="surname">Отчество</label>
+                        <input type="text" id="surname" name="surname" placeholder="Введите отчество"
+                            value="Александрович">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="required">Пол</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="male" name="gender" value="male" required checked>
+                        <label for="male">Мужской</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="female" name="gender" value="female">
+                        <label for="female">Женский</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="faculty" class="required">Факультет</label>
+                <select id="faculty" name="faculty" required>
+                    <option value="">Выберите факультет</option>
+                    <option value="fit" selected>Факультет информационных технологий</option>
+                    <option value="ef">Экономический факультет</option>
+                    <option value="lf">Юридический факультет</option>
+                    <option value="gf">Гуманитарный факультет</option>
+                    <option value="tf">Технический факультет</option>
+                    <option value="mf">Медицинский факультет</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Проектная деятельность -->
+        <div class="form-section">
+            <h2 class="section-title">Проектная деятельность</h2>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <div class="checkbox-option">
+                        <input type="checkbox" id="projectParticipant" name="projectParticipant" checked>
+                        <label for="projectParticipant">Участие в проекте</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" id="projectNameGroup">
+                <label for="projectName">Наименование проекта</label>
+                <input type="text" id="projectName" name="projectName" placeholder="Введите название проекта"
+                    value="Броня">
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="actions">
+            <button type="button" onclick="makeInitials()">Создать инициалы</button>
+            <button type="button" onclick="makeProjectStatus()">Статус проекта</button>
+        </div>
+    </form>
+
+    <!-- Результат -->
+    <div id="result" class="result" style="display: none;">
+        <h3>Результат обработки данных</h3>
+        <div id="resultContent"></div>
+    </div>
+
+    <!-- Информация об API -->
+    <div class="api-info">
+        <h3>Информация об API эндпоинтах</h3>
+
+        <div class="endpoint">
+            <strong>Эндпоинт 1:</strong> GET /api/lab7/task2/makeInitials<br>
+            <strong>Параметры:</strong> lastname, firstname, surname<br>
+            <strong>Пример:</strong> /api/lab7/task2/makeInitials?lastname=Иванов&firstname=Иван&surname=Петрович
+        </div>
+
+        <div class="endpoint">
+            <strong>Эндпоинт 2:</strong> GET /api/lab7/task2/makeProjectStatus<br>
+            <strong>Параметры:</strong> lastname, firstname, surname, projectParticipant<br>
+            <strong>Пример:</strong>
+            /api/lab7/task2/makeProjectStatus?lastname=Иванов&firstname=Иван&projectParticipant=true
+        </div>
+    </div>
+</body>
+
+</html>

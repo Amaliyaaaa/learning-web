@@ -66,4 +66,48 @@ export default async function routes(fastify, options) {
 
     return { a: numA, b: numB, operation, result };
   });
+
+  // ЗАДАНИЕ 2: Обработка данных пользователя
+
+  // Эндпоинт 2.1: Создание инициалов
+  fastify.get('/task2/makeInitials', async (request, reply) => {
+    const { lastname, firstname, surname } = request.query;
+
+    if (!lastname || !firstname) {
+      reply.code(400);
+      return { error: 'Необходимы параметры: lastname, firstname' };
+    }
+
+    const firstnameLetter = firstname.charAt(0).toUpperCase() + '.';
+    const surnameLetter = surname ? surname.charAt(0).toUpperCase() + '.' : '';
+
+    return {
+      lastname: lastname.trim(),
+      firstnameLetter,
+      surnameLetter,
+      fullInitials: `${lastname.trim()} ${firstnameLetter}${surnameLetter}`
+    };
+  });
+
+  // Эндпоинт 2.2: Статус проекта
+  fastify.get('/task2/makeProjectStatus', async (request, reply) => {
+    const { lastname, firstname, surname, projectParticipant } = request.query;
+
+    if (!lastname || !firstname) {
+      reply.code(400);
+      return { error: 'Необходимы параметры: lastname, firstname' };
+    }
+
+    const firstnameLetter = firstname.charAt(0).toUpperCase() + '.';
+    const surnameLetter = surname ? surname.charAt(0).toUpperCase() + '.' : '';
+    const participantStatus = projectParticipant === 'true' ? 'Участвует' : 'Не участвует';
+
+    return {
+      lastname: lastname.trim(),
+      firstnameLetter,
+      surnameLetter,
+      projectParticipant: participantStatus,
+      fullInfo: `${lastname.trim()} ${firstnameLetter}${surnameLetter} - ${participantStatus}`
+    };
+  });
 }
