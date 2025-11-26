@@ -16,10 +16,13 @@ fastify.register(FastifyStatic, {
 });
 
 // --- РЕГИСТРАЦИЯ РОУТЕРОВ ДЛЯ ЛАБОРАТОРНЫХ ---
-// Пример для ЛР №7
+// Пример для ЛР №7-8
 import lab7Routes from './src/routes/lab7/index.js';
+import lab8Routes from './src/routes/lab8/index.js';
 
 fastify.register(lab7Routes, { prefix: '/api/lab7' });
+fastify.register(lab8Routes, { prefix: '/api/lab8' });
+
 // Здесь добавляем новые строки для каждой лабы
 
 // --- ЗАПУСК СЕРВERA ---
