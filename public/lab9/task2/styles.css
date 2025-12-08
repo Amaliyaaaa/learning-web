@@ -1,127 +1,41 @@
 body {
     font-family: sans-serif;
-    padding: 20px;
     background: #f9f9f9;
-    color: #000;
-    margin: 0;
+    padding: 20px;
 }
 
-.container {
-    display: flex;
-    gap: 20px;
-    width: 100%;
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.form-container,
-.saved-data {
-    background: #ffffff;
-    border-radius: 8px;
-    padding: 20px 25px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    flex: 1;
-    box-sizing: border-box;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 600;
-}
-
-input[type="text"],
-select {
-    width: 100%;
-    padding: 6px 10px;
-    border-radius: 5px;
+.product {
+    background: #fff;
     border: 1px solid #ccc;
-    background: #ffffff;
-    font-size: 16px;
-    box-sizing: border-box;
-}
-
-.radio-group,
-.checkbox-group {
-    display: flex;
-    gap: 15px;
-    margin-top: 5px;
-}
-
-.radio-group label,
-.checkbox-group label {
-    font-weight: normal;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-#projectNameGroup {
-    display: none;
-    margin-top: 10px;
-}
-
-#projectNameGroup.show {
-    display: block;
-}
-
-.buttons-group {
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 6px;
     display: flex;
     gap: 10px;
-    margin-top: 10px;
+    align-items: center;
 }
 
-button {
-    flex: 1;
-    padding: 8px 12px;
-    font-size: 16px;
-    background: #d9d9d9;
-    border: 1px solid #bfbfbf;
-    border-radius: 5px;
+.product input {
+    padding: 5px;
+    width: 150px;
+}
+
+.count {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.count button {
+    padding: 5px 10px;
+}
+
+.save {
+    margin-left: auto;
+    background: #0077ff;
+    color: #fff;
+    padding: 5px 12px;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
-    transition: 0.2s;
-}
-
-button:hover {
-    background: #c7c7c7;
-}
-
-button.save-btn {
-    background: #e6e6e6;
-}
-
-button.save-btn:hover {
-    background: #d4d4d4;
-}
-
-.result {
-    margin-top: 15px;
-    padding: 10px;
-    border-radius: 5px;
-    font-weight: bold;
-    display: none;
-    background: #f0f0f0;
-}
-
-.result.show {
-    display: block;
-}
-
-.saved-data {
-    max-height: 80vh;
-    overflow-y: auto;
-    border: 1px solid #e0e0e0;
-}
-
-.data-item {
-    padding: 10px;
-    margin: 10px 0;
-    background: #ffffff;
-    border-radius: 5px;
-    border-left: 4px solid #2c3e50;
-    word-break: break-word;
 }

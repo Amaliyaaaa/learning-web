@@ -7,6 +7,21 @@ class ProductService {
         const { rows } = await db.query(query);
         return rows;
     }
+
+    async search(db, q) {
+        if (!q || q.trim() === "") {
+            return this.getAll(db);
+        }
+
+        const query = `
+            SELECT * FROM lab9.products
+            WHERE LOWER(title) LIKE LOWER($1)
+            ORDER BY id DESC
+        `;
+        const { rows } = await db.query(query, [`%${q}%`]);
+        return rows;
+    }
+
     // Создать товар
     async create(db, productData) {
         const { title, price, amount } = productData;

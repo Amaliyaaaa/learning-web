@@ -1,92 +1,78 @@
-const form = document.getElementById('userForm');
-const projectParticipantCheckbox = document.getElementById('projectParticipant');
-const projectNameGroup = document.getElementById('projectNameGroup');
-const resultDiv = document.getElementById('result');
-const savedUsersDiv = document.getElementById('savedUsers');
-const getInfoBtn = document.getElementById('getInfoBtn');
-const saveBtn = document.getElementById('saveBtn');
+const API = "/api/lab9/task1/products";
+const API_STOCK = "/api/lab9/task1/stock";
+const API_ID = "/api/lab9/task2/products";
 
-projectParticipantCheckbox.addEventListener('change', () => {
-    if (projectParticipantCheckbox.checked) projectNameGroup.classList.add('show');
-    else projectNameGroup.classList.remove('show');
-});
-
-async function loadSavedUsers() {
-    try {
-        const response = await fetch('/api/lab8/task1');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const users = await response.json();
-
-        savedUsersDiv.innerHTML = (!users?.length)
-            ? '<p>Нет сохраненных данных</p>'
-            : users.map(user => `
-                <div class="data-item">
-                    <strong>ID:</strong> ${user.id}<br>
-                    <strong>ФИО:</strong> ${user.lastname} ${user.firstname} ${user.surname}<br>
-                    <strong>Пол:</strong> ${user.gender === 'male' ? 'Мужской' : 'Женский'}<br>
-                    <strong>Факультет:</strong> ${user.faculty}<br>
-                    <strong>Участие в проекте:</strong> ${user.projectParticipant ? 'Да' : 'Нет'}${user.projectName ? `<br><strong>Название проекта:</strong> ${user.projectName}` : ''}
-                </div>
-            `).join('');
-    } catch (error) {
-        savedUsersDiv.innerHTML = `<p>Ошибка загрузки: ${error.message}</p>`;
-    }
+function formatPrice(cents) {
+    return (cents / 100).toLocaleString("ru-RU", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }) + " ₽";
 }
 
-getInfoBtn.addEventListener('click', async () => {
-    const lastname = form.lastname.value, firstname = form.firstname.value, surname = form.surname.value;
-    if (!lastname || !firstname || !surname) {
-        resultDiv.className = 'result show';
-        resultDiv.innerHTML = '<h3>Ошибка</h3><p>Заполните все поля ФИО</p>';
+async function loadStock() {
+    const res = await fetch(API_STOCK);
+    const data = await res.json();
+    document.getElementById("stock").textContent = JSON.stringify(data, null, 2);
+}
+
+async function loadProducts() {
+    const res = await fetch(API);
+    const products = await res.json();
+
+    document.getElementById("list").innerHTML = products
+        .map(p => `
+        <div class="product">
+            <input class="title" data-id="${p.id}" value="${p.title}">
+            <input class="price" data-id="${p.id}" value="${(p.price / 100).toFixed(2)}">
+            
+            <div class="count">
+                <button onclick="changeAmount(${p.id}, -1)">–</button>
+                <span id="amount-${p.id}">${p.amount}</span>
+                <button onclick="changeAmount(${p.id}, 1)">+</button>
+            </div>
+
+            <button class="save" onclick="save(${p.id})">Сохранить</button>
+        </div>
+    `).join('');
+}
+
+async function changeAmount(id, delta) {
+    const el = document.getElementById(`amount-${id}`);
+    let value = parseInt(el.textContent);
+    value = Math.max(0, value + delta);
+    el.textContent = value;
+}
+
+async function save(id) {
+    const title = document.querySelector(`.title[data-id="${id}"]`).value;
+    const priceRub = Number(document.querySelector(`.price[data-id="${id}"]`).value);
+    const amount = Number(document.getElementById(`amount-${id}`).textContent);
+
+    const price = Math.round(priceRub * 100);
+
+    await fetch(`${API_ID}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, price, amount })
+    });
+
+    loadStock();
+}
+
+async function loadById() {
+    const id = document.getElementById("prodId").value;
+    if (!id) return;
+
+    const res = await fetch(`${API_ID}/${id}`);
+
+    if (res.status === 404) {
+        document.getElementById("prodInfo").textContent = "Товар не найден";
         return;
     }
 
-    const params = new URLSearchParams({ lastname, firstname, surname, projectParticipant: projectParticipantCheckbox.checked ? 'true' : 'false' });
+    const product = await res.json();
+    document.getElementById("prodInfo").textContent = JSON.stringify(product, null, 2);
+}
 
-    try {
-        const [response1, response2] = await Promise.all([
-            fetch(`/api/lab8/task1/makeInitials?${params}`),
-            fetch(`/api/lab8/task1/makeProjectStatus?${params}`)
-        ]);
-        const [data1, data2] = await Promise.all([response1.json(), response2.json()]);
-        const isOk = response1.ok && response2.ok;
-        resultDiv.className = 'result show';
-        resultDiv.innerHTML = isOk ? `<h3>Результаты:</h3><p><strong>Инициалы:</strong> ${data1.lastname} ${data1.firstnameLetter}.${data1.surnameLetter}.</p><p><strong>Статус проекта:</strong> ${data2.projectParticipant}</p>` : `<h3>Ошибка</h3><p>${data1.error || data2.error}</p>`;
-    } catch (error) {
-        resultDiv.className = 'result show';
-        resultDiv.innerHTML = `<h3>Ошибка</h3><p>${error.message}</p>`;
-    }
-});
-
-saveBtn.addEventListener('click', async () => {
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-
-    const formData = {
-        lastname: form.lastname.value,
-        firstname: form.firstname.value,
-        surname: form.surname.value,
-        gender: form.gender.value,
-        faculty: form.faculty.value,
-        projectParticipant: projectParticipantCheckbox.checked,
-        projectName: projectParticipantCheckbox.checked ? form.projectName.value : undefined
-    };
-
-    try {
-        const response = await fetch('/api/lab8/task1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
-        const data = await response.json();
-
-        resultDiv.className = 'result show';
-        resultDiv.innerHTML = response.ok ? `<h3>Данные успешно сохранены!</h3><p><strong>ID:</strong> ${data.id}</p>` : `<h3>Ошибка валидации</h3><p>${data.message || JSON.stringify(data)}</p>`;
-
-        if (response.ok) {
-            form.reset();
-            projectNameGroup.classList.remove('show');
-            await loadSavedUsers();
-        }
-    } catch (error) {
-        resultDiv.className = 'result show';
-        resultDiv.innerHTML = `<h3>Ошибка</h3><p>${error.message}</p>`;
-    }
-});
-
-loadSavedUsers();
+loadStock();
+loadProducts();

@@ -6,12 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
     <title>Лабораторная 9, задание 1. Ибрагимова А.Ф., ИТ2301</title>
-
 </head>
 
 <body>
-    <h1>Задание 1</h1>
-    
+    <h1>Task 1 — Stock Info</h1>
+
+    <button onclick="loadStock()">Загрузить статистику склада</button>
+    <pre id="result">Нажмите кнопку...</pre>
+
+    <h1>Поиск товаров</h1>
+
+    <input id="search" placeholder="Введите название">
+    <button onclick="find()">Поиск</button>
+
+    <div id="list"></div>
+
+    <script src="script.js"></script>
 </body>
 
 </html>
