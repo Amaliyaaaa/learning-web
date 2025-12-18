@@ -101,7 +101,14 @@ class ScheduleService {
 
     if (teacherId) {
       values.push(teacherId);
-      conditions.push(`EXISTS (SELECT 1 FROM lab10.schedule_teachers st WHERE st.schedule_id = s.id AND st.teacher_id = $${values.length})`);
+      conditions.push(`
+        EXISTS (
+          SELECT 1
+          FROM lab10.schedule_teachers st2
+          WHERE st2.schedule_id = s.id
+            AND st2.teacher_id = $${values.length}
+        )
+      `);
     }
 
     if (lessonTypeId) {
@@ -109,75 +116,107 @@ class ScheduleService {
       conditions.push(`s.lesson_type_id = $${values.length}`);
     }
 
-    const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+    const whereClause = conditions.length
+      ? 'WHERE ' + conditions.join(' AND ')
+      : '';
 
     const query = `
       SELECT 
-        s.*,
-        g.name as group_name,
-        sub.name as subject_name,
-        STRING_AGG(
-          CASE 
-            WHEN t.middlename IS NOT NULL AND t.middlename != '' 
-            THEN t.lastname || ' ' || t.firstname || ' ' || t.middlename
-            ELSE t.lastname || ' ' || t.firstname
-          END,
-          ', '
-          ORDER BY t.lastname, t.firstname
-        ) as teacher_name,
-        c.number as classroom_number,
-        b.name as building_name,
-        lt.name as lesson_type_name
+        s.id,
+        s.week,
+        s.day_of_week,
+        s.lesson_number,
+        s.group_id,
+        g.name AS group_name,
+        s.subject_id,
+        sub.name AS subject_name,
+        s.classroom_id,
+        c.number AS classroom_number,
+        b.name AS building_name,
+        s.lesson_type_id,
+        lt.name AS lesson_type_name,
+  
+        COALESCE(
+          STRING_AGG(
+            t.lastname || ' ' || t.firstname || COALESCE(' ' || t.middlename, ''),
+            ', '
+            ORDER BY t.lastname, t.firstname
+          ),
+          ''
+        ) AS teacher_name
+  
       FROM lab10.schedule s
-      LEFT JOIN lab10.groups g ON s.group_id = g.id
-      LEFT JOIN lab10.subjects sub ON s.subject_id = sub.id
-      LEFT JOIN lab10.schedule_teachers st ON s.id = st.schedule_id
-      LEFT JOIN lab10.teachers t ON st.teacher_id = t.id
-      LEFT JOIN lab10.classrooms c ON s.classroom_id = c.id
-      LEFT JOIN lab10.buildings b ON c.building_id = b.id
-      LEFT JOIN lab10.lesson_types lt ON s.lesson_type_id = lt.id
+      LEFT JOIN lab10.groups g ON g.id = s.group_id
+      LEFT JOIN lab10.subjects sub ON sub.id = s.subject_id
+      LEFT JOIN lab10.schedule_teachers st ON st.schedule_id = s.id
+      LEFT JOIN lab10.teachers t ON t.id = st.teacher_id
+      LEFT JOIN lab10.classrooms c ON c.id = s.classroom_id
+      LEFT JOIN lab10.buildings b ON b.id = c.building_id
+      LEFT JOIN lab10.lesson_types lt ON lt.id = s.lesson_type_id
+  
       ${whereClause}
-      GROUP BY s.id, g.name, sub.name, c.number, b.name, lt.name, s.week, s.day_of_week, s.lesson_number, s.group_id, s.subject_id, s.classroom_id, s.lesson_type_id
+  
+      GROUP BY
+        s.id,
+        g.name,
+        sub.name,
+        c.number,
+        b.name,
+        lt.name
+  
       ORDER BY s.day_of_week, s.lesson_number
     `;
 
     const { rows } = await db.query(query, values);
     return rows;
   }
-
+  
   async getScheduleById(db, id) {
     const query = `
       SELECT 
         s.*,
-        g.name as group_name,
-        sub.name as subject_name,
-        STRING_AGG(
-          CASE 
-            WHEN t.middlename IS NOT NULL AND t.middlename != '' 
-            THEN t.lastname || ' ' || t.firstname || ' ' || t.middlename
-            ELSE t.lastname || ' ' || t.firstname
-          END,
-          ', '
-          ORDER BY t.lastname, t.firstname
-        ) as teacher_name,
-        ARRAY_AGG(st.teacher_id ORDER BY t.lastname, t.firstname) as teacher_ids,
-        c.number as classroom_number,
-        b.name as building_name,
-        lt.name as lesson_type_name
+        g.name AS group_name,
+        sub.name AS subject_name,
+  
+        COALESCE(
+          STRING_AGG(
+            t.lastname || ' ' || t.firstname || COALESCE(' ' || t.middlename, ''),
+            ', '
+            ORDER BY t.lastname, t.firstname
+          ),
+          ''
+        ) AS teacher_name,
+  
+        ARRAY_AGG(t.id ORDER BY t.lastname, t.firstname) AS teacher_ids,
+  
+        c.number AS classroom_number,
+        b.name AS building_name,
+        lt.name AS lesson_type_name
+  
       FROM lab10.schedule s
-      LEFT JOIN lab10.groups g ON s.group_id = g.id
-      LEFT JOIN lab10.subjects sub ON s.subject_id = sub.id
-      LEFT JOIN lab10.schedule_teachers st ON s.id = st.schedule_id
-      LEFT JOIN lab10.teachers t ON st.teacher_id = t.id
-      LEFT JOIN lab10.classrooms c ON s.classroom_id = c.id
-      LEFT JOIN lab10.buildings b ON c.building_id = b.id
-      LEFT JOIN lab10.lesson_types lt ON s.lesson_type_id = lt.id
+      LEFT JOIN lab10.groups g ON g.id = s.group_id
+      LEFT JOIN lab10.subjects sub ON sub.id = s.subject_id
+      LEFT JOIN lab10.schedule_teachers st ON st.schedule_id = s.id
+      LEFT JOIN lab10.teachers t ON t.id = st.teacher_id
+      LEFT JOIN lab10.classrooms c ON c.id = s.classroom_id
+      LEFT JOIN lab10.buildings b ON b.id = c.building_id
+      LEFT JOIN lab10.lesson_types lt ON lt.id = s.lesson_type_id
+  
       WHERE s.id = $1
-      GROUP BY s.id, g.name, sub.name, c.number, b.name, lt.name, s.week, s.day_of_week, s.lesson_number, s.group_id, s.subject_id, s.classroom_id, s.lesson_type_id, s.teacher_id
+  
+      GROUP BY
+        s.id,
+        g.name,
+        sub.name,
+        c.number,
+        b.name,
+        lt.name
     `;
+
     const { rows } = await db.query(query, [id]);
     return rows[0] || null;
   }
+  
 
   async createSchedule(db, scheduleData) {
     const {

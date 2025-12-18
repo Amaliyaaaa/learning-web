@@ -246,14 +246,14 @@ function displayOrders(orders) {
       ${orders.map(o => `
         <div class="order-card" onclick="showOrder(${o.id})">
           <div><strong>Заказ #${o.id}</strong></div>
-          <div>Товар: ${o.product_title}</div>
-          <div>Цена: ${formatPrice(o.price)}</div>
+          <div>Сумма: ${formatPrice(o.total_amount)}</div>
           <div>Дата: ${new Date(o.created_at).toLocaleString('ru-RU')}</div>
         </div>
       `).join('')}
     </div>
   `;
 }
+
 
 async function showOrder(id) {
   try {
@@ -270,7 +270,7 @@ async function showOrder(id) {
       <h3>Товары:</h3>
       <ul>
         ${order.items.map(item => `
-          <li>${item.product_title} - ${formatPrice(item.price)} × ${item.quantity} = ${formatPrice(item.price * item.quantity)}</li>
+          <li>${item.title} - ${formatPrice(item.price)} × ${item.quantity} = ${formatPrice(item.price * item.quantity)}</li>
         `).join('')}
       </ul>
       <p><strong>Общая сумма:</strong> ${formatPrice(order.total_amount)}</p>
@@ -281,6 +281,7 @@ async function showOrder(id) {
     alert('Ошибка при загрузке заказа');
   }
 }
+
 
 function closeOrderModal() {
   document.getElementById('order-modal').style.display = 'none';
@@ -350,22 +351,26 @@ async function buyCart() {
       body: JSON.stringify({ items })
     });
 
-    if (res.ok) {
-      const result = await res.json();
-      alert(`Заказ оформлен! Создано заказов: ${result.orderIds.length}`);
-      localStorage.removeItem('cart');
-      updateCartLink();
-      showCart();
-      loadOrders();
-    } else {
-      const error = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-      alert(`Ошибка: ${error.error || 'Неизвестная ошибка'}`);
+    const result = await res.json();
+
+    if (!res.ok) {
+      throw new Error(result.error || `HTTP ${res.status}`);
     }
+
+    // ✅ ВАЖНО: сервер возвращает orderId
+    alert(`Заказ оформлен! Номер заказа: ${result.orderId}`);
+
+    localStorage.removeItem('cart');
+    updateCartLink();
+    showCart();
+    loadOrders();
+
   } catch (error) {
     console.error('Ошибка покупки:', error);
     alert(`Ошибка при оформлении заказа: ${error.message}`);
   }
 }
+
 
 function showSection(section) {
   document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
@@ -622,4 +627,3 @@ window.addEventListener('DOMContentLoaded', () => {
     addProductForm.addEventListener('submit', addProduct);
   }
 });
-

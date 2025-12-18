@@ -58,171 +58,128 @@ class ShopService {
 
   async getOrderById(db, id) {
     const query = `
-      SELECT 
+      SELECT
         o.id,
         o.created_at,
-        o.product_id,
-        p.title as product_title,
-        p.price
+        i.product_id,
+        p.title,
+        i.quantity,
+        i.price
       FROM lab10.orders o
-      JOIN lab10.products p ON o.product_id = p.id
+      JOIN lab10.order_items i ON i.order_id = o.id
+      JOIN lab10.products p ON p.id = i.product_id
       WHERE o.id = $1
     `;
+
     const { rows } = await db.query(query, [id]);
-    
     if (rows.length === 0) return null;
 
-    const orderId = rows[0].id;
-    const created_at = rows[0].created_at;
-    
-    const itemsMap = new Map();
-    rows.forEach(row => {
-      const key = row.product_id;
-      if (itemsMap.has(key)) {
-        itemsMap.get(key).quantity++;
-      } else {
-        itemsMap.set(key, {
-          product_id: row.product_id,
-          product_title: row.product_title,
-          price: row.price,
-          quantity: 1
-        });
-      }
-    });
-
-    const items = Array.from(itemsMap.values());
-    const total_amount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const total = rows.reduce(
+      (sum, r) => sum + r.price * r.quantity,
+      0
+    );
 
     return {
-      id: orderId,
-      created_at: created_at,
-      items: items,
-      total_amount: total_amount
+      id,
+      created_at: rows[0].created_at,
+      items: rows.map(r => ({
+        product_id: r.product_id,
+        title: r.title,
+        quantity: r.quantity,
+        price: r.price
+      })),
+      total_amount: total
     };
   }
 
   async getAllOrders(db, { page = 1, limit = 10 }) {
     const offset = (page - 1) * limit;
-    
+
     const dataQuery = `
-      SELECT 
+      SELECT
         o.id,
         o.created_at,
-        p.title as product_title,
-        p.price
+        SUM(i.price * i.quantity) as total_amount
       FROM lab10.orders o
-      JOIN lab10.products p ON o.product_id = p.id
+      JOIN lab10.order_items i ON i.order_id = o.id
+      GROUP BY o.id
       ORDER BY o.created_at DESC
       LIMIT $1 OFFSET $2
     `;
-    
+
     const countQuery = 'SELECT COUNT(*) FROM lab10.orders';
-    
-    const [dataResult, countResult] = await Promise.all([
+
+    const [dataRes, countRes] = await Promise.all([
       db.query(dataQuery, [limit, offset]),
       db.query(countQuery)
     ]);
 
     return {
-      data: dataResult.rows,
-      total: parseInt(countResult.rows[0].count),
-      page: parseInt(page),
-      limit: parseInt(limit)
+      data: dataRes.rows,
+      total: parseInt(countRes.rows[0].count),
+      page,
+      limit
     };
-  }
-
-  async buyProduct(db, productId) {
-    const pool = db.pool || db;
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      
-      const checkRes = await client.query(
-        'SELECT amount FROM lab10.products WHERE id = $1 FOR UPDATE',
-        [productId]
-      );
-
-      if (checkRes.rows.length === 0) {
-        await client.query('ROLLBACK');
-        throw new Error('Товар не найден');
-      }
-      
-      const product = checkRes.rows[0];
-      if (product.amount <= 0) {
-        await client.query('ROLLBACK');
-        throw new Error('Товар закончился');
-      }
-
-      await client.query(
-        'UPDATE lab10.products SET amount = amount - 1 WHERE id = $1',
-        [productId]
-      );
-
-      const orderRes = await client.query(
-        'INSERT INTO lab10.orders (product_id) VALUES ($1) RETURNING id',
-        [productId]
-      );
-
-      await client.query('COMMIT');
-      return { orderId: orderRes.rows[0].id };
-    } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw err;
-    } finally {
-      client.release();
-    }
   }
 
   async buyProducts(db, items) {
     const pool = db.pool || db;
     const client = await pool.connect();
+
     try {
       await client.query('BEGIN');
-      const orderIds = [];
-      
-      for (const item of items) {
-        const { productId, quantity } = item;
-        
-        const checkRes = await client.query(
-          'SELECT amount FROM lab10.products WHERE id = $1 FOR UPDATE',
+
+      // Создаём заказ
+      const orderRes = await client.query(
+        'INSERT INTO lab10.orders DEFAULT VALUES RETURNING id'
+      );
+      const orderId = orderRes.rows[0].id;
+
+      // Для каждой позиции
+      for (const { productId, quantity } of items) {
+
+        const productRes = await client.query(
+          'SELECT price, amount FROM lab10.products WHERE id = $1 FOR UPDATE',
           [productId]
         );
 
-        if (checkRes.rows.length === 0) {
-          await client.query('ROLLBACK');
-          throw new Error(`Товар с ID ${productId} не найден`);
+        if (productRes.rows.length === 0) {
+          throw new Error(`Товар ${productId} не найден`);
         }
 
-        const product = checkRes.rows[0];
+        const product = productRes.rows[0];
+
         if (product.amount < quantity) {
-          await client.query('ROLLBACK');
-          throw new Error(`Недостаточно товара с ID ${productId}. Доступно: ${product.amount}, запрошено: ${quantity}`);
+          throw new Error(`Недостаточно товара ${productId}`);
         }
 
+        // списываем со склада
         await client.query(
           'UPDATE lab10.products SET amount = amount - $1 WHERE id = $2',
           [quantity, productId]
         );
 
-        for (let i = 0; i < quantity; i++) {
-          const orderRes = await client.query(
-            'INSERT INTO lab10.orders (product_id) VALUES ($1) RETURNING id',
-            [productId]
-          );
-          orderIds.push(orderRes.rows[0].id);
-        }
+        // добавляем позицию заказа
+        await client.query(
+          `INSERT INTO lab10.order_items 
+           (order_id, product_id, quantity, price)
+           VALUES ($1, $2, $3, $4)`,
+          [orderId, productId, quantity, product.price]
+        );
       }
 
       await client.query('COMMIT');
-      return { orderIds };
+      return { orderId };
+
     } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
+      await client.query('ROLLBACK');
       throw err;
     } finally {
       client.release();
     }
   }
-  
+
+
   async createProduct(db, productData) {
     const { title, price, amount, category_id, description, image_url } = productData;
     const query = `
@@ -321,7 +278,7 @@ class ShopService {
     const checkQuery = 'SELECT COUNT(*) FROM lab10.products WHERE category_id = $1';
     const { rows: checkRows } = await db.query(checkQuery, [id]);
     const productCount = parseInt(checkRows[0].count);
-    
+
     if (productCount > 0) {
       throw new Error(`Нельзя удалить категорию: в ней есть ${productCount} товар(ов)`);
     }
@@ -337,4 +294,3 @@ class ShopService {
 }
 
 export default new ShopService();
-

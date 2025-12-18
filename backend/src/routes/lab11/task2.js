@@ -225,19 +225,41 @@ export default async function task2Routes(fastify) {
     if (!fastify.pg) {
       return reply.code(503).send({ error: 'Database not available' });
     }
+    
+    // Детальное логирование для диагностики
+    fastify.log.info(`DELETE /task2/users/:id - Запрос на удаление пользователя ${request.params.id}`);
+    fastify.log.info(`DELETE /task2/users/:id - request.user: ${JSON.stringify(request.user)}`);
+    fastify.log.info(`DELETE /task2/users/:id - Authorization header: ${request.headers.authorization ? 'present' : 'missing'}`);
+    
     // Проверяем, что пользователь авторизован
     if (!request.user) {
+      fastify.log.error('DELETE /task2/users/:id - request.user не установлен');
       return reply.code(401).send({ error: "Unauthorized" });
     }
+    
     // Проверяем роль админа
     if (request.user.role !== "admin") {
-      fastify.log.warn(`Access denied for user ${request.user.login || 'unknown'} with role ${request.user.role || 'unknown'}`);
+      fastify.log.warn(`DELETE /task2/users/:id - Access denied for user ${request.user.login || 'unknown'} with role ${request.user.role || 'unknown'}`);
       return reply.code(403).send({ error: "Forbidden: admin only" });
     }
+    
     try {
+      // Валидация ID
       const userId = parseInt(request.params.id);
+      if (isNaN(userId) || userId <= 0) {
+        fastify.log.warn(`DELETE /task2/users/:id - Неверный ID: ${request.params.id}`);
+        return reply.code(400).send({
+          error: "Неверный ID пользователя",
+        });
+      }
 
-      if (userId === request.user.id) {
+      fastify.log.info(`DELETE /task2/users/:id - Пытаемся удалить пользователя ${userId} (запросил: ${request.user.id}, тип: ${typeof request.user.id})`);
+
+      // Проверка, что пользователь не удаляет самого себя
+      // Сравниваем как числа, чтобы избежать проблем с типами
+      const currentUserId = typeof request.user.id === 'number' ? request.user.id : parseInt(request.user.id);
+      if (userId === currentUserId) {
+        fastify.log.warn(`DELETE /task2/users/:id - Попытка удалить самого себя (userId: ${userId}, currentUserId: ${currentUserId})`);
         return reply.code(400).send({
           error: "Нельзя удалить самого себя",
         });
@@ -245,13 +267,16 @@ export default async function task2Routes(fastify) {
 
       const deleted = await deleteUser(fastify.pg, userId);
       if (!deleted) {
+        fastify.log.warn(`DELETE /task2/users/:id - Пользователь ${userId} не найден`);
         return reply.code(404).send({ error: "Пользователь не найден" });
       }
 
+      fastify.log.info(`DELETE /task2/users/:id - Пользователь ${userId} успешно удален`);
       return { message: "Пользователь удален", id: deleted.id };
     } catch (err) {
-      fastify.log.error(err);
-      return reply.code(500).send({ error: 'Failed to delete user' });
+      fastify.log.error(`DELETE /task2/users/:id - Ошибка при удалении:`, err);
+      fastify.log.error(`DELETE /task2/users/:id - Стек ошибки:`, err.stack);
+      return reply.code(500).send({ error: 'Failed to delete user', details: err.message });
     }
   });
 

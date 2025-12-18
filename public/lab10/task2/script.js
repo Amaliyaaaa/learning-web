@@ -12,17 +12,17 @@ function checkAuthStatus() {
     console.warn('⚠️ Токен не найден. Авторизуйтесь через lab11 как администратор.');
     return null;
   }
-  
+
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     console.log('✅ Токен найден. Пользователь:', payload.login, 'Роль:', payload.role);
-    
+
     if (payload.exp && payload.exp * 1000 < Date.now()) {
       console.warn('⚠️ Токен истек. Авторизуйтесь снова.');
       localStorage.removeItem('jwt_token');
       return null;
     }
-    
+
     return payload;
   } catch (e) {
     console.error('Ошибка декодирования токена:', e);
@@ -33,7 +33,7 @@ function checkAuthStatus() {
 function updateAuthStatusDisplay() {
   const statusElement = document.getElementById('auth-status-text');
   if (!statusElement) return;
-  
+
   const authStatus = checkAuthStatus();
   if (!authStatus) {
     statusElement.textContent = '❌ Не авторизован. Авторизуйтесь через lab11 как администратор.';
@@ -52,17 +52,21 @@ window.addEventListener('DOMContentLoaded', () => {
   setInterval(updateAuthStatusDisplay, 5000);
 });
 
-function getAuthHeaders() {
+function getAuthHeaders(includeContentType = true) {
   const token = getAuthToken();
+  const headers = {};
+
+  if (includeContentType) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   if (!token) {
     console.warn('⚠️ Токен авторизации не найден в localStorage');
-    return { 'Content-Type': 'application/json' };
+    return headers;
   }
   console.log('✅ Токен найден, добавляю в заголовки запроса');
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
-  };
+  headers['Authorization'] = `Bearer ${token}`;
+  return headers;
 }
 
 const DAYS = {
@@ -400,20 +404,52 @@ function displaySchedule(schedule) {
 async function deleteSchedule(id) {
   if (!confirm('Удалить занятие?')) return;
 
+  // Преобразуем ID в число для консистентности
+  const scheduleId = Number(id);
+  console.log('Удаление расписания:', { id, scheduleId, idType: typeof id, scheduleIdType: typeof scheduleId });
+
   try {
-    const res = await fetch(`${API}/schedule/${id}`, {
+    const url = `${API}/schedule/${scheduleId}`;
+    const headers = getAuthHeaders(false); // Не устанавливаем Content-Type для DELETE без тела
+    console.log('DELETE запрос:', url);
+    console.log('Заголовки:', headers);
+
+    const res = await fetch(url, {
       method: 'DELETE',
-      headers: getAuthHeaders()
+      headers: headers
     });
+
+    console.log('Ответ сервера:', { status: res.status, statusText: res.statusText });
+
+    const data = await res.json().catch(() => ({ error: 'Ошибка при удалении' }));
+    console.log('Данные ответа:', data);
+
     if (res.ok) {
+      alert('Занятие удалено');
       loadSchedule();
     } else {
-      const error = await res.json().catch(() => ({ error: 'Ошибка при удалении' }));
-      alert(`Ошибка: ${error.error || 'Ошибка при удалении'}`);
+      // Более понятные сообщения об ошибках
+      let errorMessage = 'Ошибка при удалении занятия';
+      if (data.error) {
+        errorMessage = data.error;
+      } else if (res.status === 400) {
+        errorMessage = 'Неверный запрос: ' + (data.error || 'Проверьте правильность данных');
+      } else if (res.status === 401) {
+        errorMessage = 'Ошибка авторизации. Пожалуйста, войдите снова.';
+        // Можно добавить логику выхода
+      } else if (res.status === 403) {
+        errorMessage = 'Доступ запрещен. Требуются права администратора.';
+      } else if (res.status === 404) {
+        errorMessage = 'Занятие не найдено';
+      } else {
+        errorMessage = `Ошибка ${res.status}: ${data.error || JSON.stringify(data)}`;
+      }
+      console.error('Ошибка удаления:', { status: res.status, data, url });
+      alert(errorMessage);
     }
   } catch (error) {
     console.error('Ошибка удаления:', error);
-    alert('Ошибка при удалении');
+    alert('Ошибка сети: ' + error.message);
   }
 }
 
@@ -712,18 +748,44 @@ async function deleteRefItem(tab, id) {
     try {
       const res = await fetch(`${API}/${endpoints[tab]}/${id}`, {
         method: 'DELETE',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(false) // Не устанавливаем Content-Type для DELETE без тела
       });
+
+      const data = await res.json().catch(() => ({ error: 'Ошибка при удалении' }));
+
       if (res.ok) {
+        alert('Запись удалена');
         loadReferences();
         loadRefTab(tab);
       } else {
-        const error = await res.json();
-        alert(`Ошибка: ${error.error || 'Неизвестная ошибка'}`);
+        // Более понятные сообщения об ошибках
+        let errorMessage = 'Ошибка при удалении записи';
+        if (data.error) {
+          errorMessage = data.error;
+          // Если есть детали, добавляем их
+          if (data.details) {
+            errorMessage += '\n\n' + data.details;
+          }
+        } else if (res.status === 400) {
+          errorMessage = 'Неверный запрос: ' + (data.error || 'Запись используется в других таблицах и не может быть удалена');
+        } else if (res.status === 401) {
+          errorMessage = 'Ошибка авторизации. Пожалуйста, войдите снова.';
+        } else if (res.status === 403) {
+          errorMessage = 'Доступ запрещен. Требуются права администратора.';
+        } else if (res.status === 404) {
+          errorMessage = 'Запись не найдена';
+        } else if (res.status === 500) {
+          errorMessage = 'Ошибка сервера: ' + (data.error || data.details || 'Попробуйте позже');
+        } else {
+          errorMessage = `Ошибка ${res.status}: ${data.error || JSON.stringify(data)}`;
+        }
+        console.error('Ошибка удаления:', { status: res.status, data, tab, id });
+        console.log('Отображаемое сообщение:', errorMessage);
+        alert(errorMessage);
       }
     } catch (error) {
       console.error('Ошибка удаления:', error);
-      alert('Ошибка при удалении');
+      alert('Ошибка сети: ' + error.message);
     }
   }
 }

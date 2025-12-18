@@ -229,9 +229,9 @@
                             <td>
                                 ${currentUser && currentUser.role === 'admin' ? `
                                     <button onclick="openEditModal(${user.id}, '${user.login}', '${user.role}')">Редактировать</button>
-                                    ${user.id !== currentUser.id ? `
+                                    ${Number(user.id) !== Number(currentUser.id) ? `
                                         <button onclick="deleteUser(${user.id})" class="danger">Удалить</button>
-                                    ` : ''}
+                                    ` : '<span style="color: #999; font-size: 0.9em;">(это вы)</span>'}
                                 ` : '<span style="color: #999;">Только просмотр</span>'}
                             </td>
                         </tr>
@@ -365,12 +365,29 @@
                 return;
             }
 
+            // Преобразуем ID в число для консистентности
+            const userIdNum = Number(userId);
+            const currentUserIdNum = Number(currentUser.id);
+            
+            console.log('Удаление пользователя:', {
+                userId: userIdNum,
+                currentUserId: currentUserIdNum,
+                userIdType: typeof userIdNum,
+                currentUserIdType: typeof currentUserIdNum
+            });
+
+            // Проверка на фронтенде, чтобы не отправлять запрос, если пользователь пытается удалить себя
+            if (userIdNum === currentUserIdNum) {
+                alert('Нельзя удалить самого себя');
+                return;
+            }
+
             if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
                 return;
             }
 
             try {
-                const response = await fetch(`${API_BASE}/task2/users/${userId}`, {
+                const response = await fetch(`${API_BASE}/task2/users/${userIdNum}`, {
                     method: 'DELETE',
                     headers: getAuthHeaders()
                 });
@@ -381,10 +398,28 @@
                     alert('Пользователь удален');
                     loadUsers();
                 } else {
-                    alert('Ошибка: ' + JSON.stringify(data));
+                    // Более понятные сообщения об ошибках
+                    let errorMessage = 'Ошибка при удалении пользователя';
+                    if (data.error) {
+                        errorMessage = data.error;
+                    } else if (response.status === 400) {
+                        errorMessage = 'Неверный запрос: ' + (data.error || 'Нельзя удалить самого себя');
+                    } else if (response.status === 401) {
+                        errorMessage = 'Ошибка авторизации. Пожалуйста, войдите снова.';
+                        performLogout();
+                    } else if (response.status === 403) {
+                        errorMessage = 'Доступ запрещен. Требуются права администратора.';
+                    } else if (response.status === 404) {
+                        errorMessage = 'Пользователь не найден';
+                    } else {
+                        errorMessage = `Ошибка ${response.status}: ${data.error || JSON.stringify(data)}`;
+                    }
+                    console.error('Ошибка удаления:', { status: response.status, data });
+                    alert(errorMessage);
                 }
             } catch (error) {
-                alert('Ошибка: ' + error.message);
+                console.error('Ошибка при удалении пользователя:', error);
+                alert('Ошибка сети: ' + error.message);
             }
         }
 

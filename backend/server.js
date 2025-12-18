@@ -28,20 +28,18 @@ fastify.register(FastifyStatic, {
 import lab7Routes from './src/routes/lab7/index.js';
 import lab8Routes from './src/routes/lab8/index.js';
 import lab9Routes from './src/routes/lab9/index.js';
-import task2Routes from './src/routes/lab9/task2.js';
-import task3Routes from './src/routes/lab9/task3.js';
-
+import lab9task2Routes from './src/routes/lab9/task2.js';
+import lab9task3Routes from './src/routes/lab9/task3.js';
 import lab10Routes from './src/routes/lab10/index.js';
+import lab11Routes from './src/routes/lab11/index.js';
 
 fastify.register(lab7Routes, { prefix: '/api/lab7' });
 fastify.register(lab8Routes, { prefix: '/api/lab8' });
 fastify.register(lab9Routes, { prefix: '/api/lab9' });
-fastify.register(task2Routes, { prefix: '/api/lab9/task2' });
-fastify.register(task3Routes, { prefix: '/api/lab9/task3' });
-
+fastify.register(lab9task2Routes, { prefix: '/api/lab9/task2' });
+fastify.register(lab9task3Routes, { prefix: '/api/lab9/task3' });
 fastify.register(lab10Routes, { prefix: '/api/lab10' });
-
-// Здесь добавляем новые строки для каждой лабы
+// fastify.register(lab11Routes, { prefix: '/api/lab11' });
 
 // --- ЗАПУСК СЕРВERA ---
 const start = async () => {
