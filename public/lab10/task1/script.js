@@ -357,7 +357,7 @@ async function buyCart() {
       throw new Error(result.error || `HTTP ${res.status}`);
     }
 
-    // ✅ ВАЖНО: сервер возвращает orderId
+    // ВАЖНО: сервер возвращает orderId
     alert(`Заказ оформлен! Номер заказа: ${result.orderId}`);
 
     localStorage.removeItem('cart');
@@ -499,17 +499,17 @@ function updateAuthStatusDisplay() {
 
   currentUser = checkAuthStatus();
   if (!currentUser) {
-    statusElement.textContent = '❌ Не авторизован';
+    statusElement.textContent = 'Не авторизован';
     statusElement.style.color = 'red';
     authStatusDiv.style.display = 'block';
     adminLink.style.display = 'none';
   } else if (currentUser.role !== 'admin') {
-    statusElement.textContent = `⚠️ Авторизован как ${currentUser.login} (${currentUser.role})`;
+    statusElement.textContent = `Авторизован как ${currentUser.login} (${currentUser.role})`;
     statusElement.style.color = 'orange';
     authStatusDiv.style.display = 'block';
     adminLink.style.display = 'none';
   } else {
-    statusElement.textContent = `✅ Авторизован как администратор (${currentUser.login})`;
+    statusElement.textContent = `Авторизован как администратор (${currentUser.login})`;
     statusElement.style.color = 'green';
     authStatusDiv.style.display = 'block';
     adminLink.style.display = 'inline-block';

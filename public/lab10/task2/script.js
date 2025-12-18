@@ -9,16 +9,16 @@ function getAuthToken() {
 function checkAuthStatus() {
   const token = getAuthToken();
   if (!token) {
-    console.warn('⚠️ Токен не найден. Авторизуйтесь через lab11 как администратор.');
+    console.warn('! Токен не найден. Авторизуйтесь через lab11 как администратор.');
     return null;
   }
 
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    console.log('✅ Токен найден. Пользователь:', payload.login, 'Роль:', payload.role);
+    console.log('Токен найден. Пользователь:', payload.login, 'Роль:', payload.role);
 
     if (payload.exp && payload.exp * 1000 < Date.now()) {
-      console.warn('⚠️ Токен истек. Авторизуйтесь снова.');
+      console.warn('! Токен истек. Авторизуйтесь снова.');
       localStorage.removeItem('jwt_token');
       return null;
     }
@@ -36,13 +36,13 @@ function updateAuthStatusDisplay() {
 
   const authStatus = checkAuthStatus();
   if (!authStatus) {
-    statusElement.textContent = '❌ Не авторизован. Авторизуйтесь через lab11 как администратор.';
+    statusElement.textContent = 'Не авторизован. Авторизуйтесь через lab11 как администратор.';
     statusElement.style.color = 'red';
   } else if (authStatus.role !== 'admin') {
-    statusElement.textContent = `⚠️ Авторизован как ${authStatus.login} (${authStatus.role}). Требуется роль администратора.`;
+    statusElement.textContent = `Авторизован как ${authStatus.login} (${authStatus.role}). Требуется роль администратора.`;
     statusElement.style.color = 'orange';
   } else {
-    statusElement.textContent = `✅ Авторизован как администратор (${authStatus.login})`;
+    statusElement.textContent = `Авторизован как администратор (${authStatus.login})`;
     statusElement.style.color = 'green';
   }
 }
@@ -61,10 +61,10 @@ function getAuthHeaders(includeContentType = true) {
   }
 
   if (!token) {
-    console.warn('⚠️ Токен авторизации не найден в localStorage');
+    console.warn('! Токен авторизации не найден в localStorage');
     return headers;
   }
-  console.log('✅ Токен найден, добавляю в заголовки запроса');
+  console.log('Токен найден, добавляю в заголовки запроса');
   headers['Authorization'] = `Bearer ${token}`;
   return headers;
 }
@@ -758,11 +758,9 @@ async function deleteRefItem(tab, id) {
         loadReferences();
         loadRefTab(tab);
       } else {
-        // Более понятные сообщения об ошибках
         let errorMessage = 'Ошибка при удалении записи';
         if (data.error) {
           errorMessage = data.error;
-          // Если есть детали, добавляем их
           if (data.details) {
             errorMessage += '\n\n' + data.details;
           }

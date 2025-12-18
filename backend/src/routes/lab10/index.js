@@ -2,30 +2,7 @@ import shopService from '../../services/lab10/shop.service.js';
 import scheduleService from '../../services/lab10/schedule.service.js';
 
 export default async function routes(fastify, options) {
-  // const authenticate = options.authenticate || (async () => { });
-
-  // Фиктивная аутентификация
-  const authenticate = async (req, reply) => {
-    req.user = {
-      id: 1,
-      login: 'dev',
-      role: 'admin'
-    };
-  };
-
-  // Вставляем в options, чтобы все маршруты его использовали
-  options.authenticate = authenticate;
-
-  fastify.addHook('onRequest', async (req, reply) => {
-    if (!req.user) {
-      req.user = {
-        id: 1,
-        login: 'dev',
-        role: 'admin'
-      };
-    }
-  });
-
+  const authenticate = options.authenticate || (async () => { });
 
   // Вспомогательная функция для проверки прав администратора
   function checkAdminAccess(req, reply, resourceName, resourceId) {
@@ -416,9 +393,19 @@ export default async function routes(fastify, options) {
       return reply.code(403).send({ error: 'Forbidden: admin only' });
     }
     try {
+      // const { name } = req.body;
+      // const position = await scheduleService.createPosition(fastify.pg, name);
+      // return reply.code(201).send(position);
       const { name } = req.body;
+      fastify.log.info('POST /task2/positions - req.body:', req.body);
+
+      if (!name) {
+        return reply.code(400).send({ error: 'Name is required' });
+      }
+
       const position = await scheduleService.createPosition(fastify.pg, name);
       return reply.code(201).send(position);
+
     } catch (err) {
       fastify.log.error(err);
       return reply.code(500).send({ error: 'Failed to create position' });

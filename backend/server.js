@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import FastifyStatic from '@fastify/static';
-import fastifyPostgres from '@fastify/postgres'; // <--- Импорт
+import fastifyPostgres from '@fastify/postgres';
+import fastifyJwt from '@fastify/jwt';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,7 +16,19 @@ dotenv.config({ path: '.env.local' });
 
 fastify.register(fastifyPostgres, {
   connectionString: process.env.DATABASE_URL
-});  
+});
+
+if (process.env.SECRET_KEY) {
+  fastify.register(fastifyJwt, { secret: process.env.SECRET_KEY });
+
+  fastify.decorate("authenticate", async function (request, reply) {
+    try {
+      await request.jwtVerify();
+    } catch (err) {
+      return reply.code(401).send({ error: "Unauthorized" });
+    }
+  });
+}
 
 // --- РЕГИСТРАЦИЯ СТАТИКИ ---
 
@@ -38,8 +51,12 @@ fastify.register(lab8Routes, { prefix: '/api/lab8' });
 fastify.register(lab9Routes, { prefix: '/api/lab9' });
 fastify.register(lab9task2Routes, { prefix: '/api/lab9/task2' });
 fastify.register(lab9task3Routes, { prefix: '/api/lab9/task3' });
-fastify.register(lab10Routes, { prefix: '/api/lab10' });
-// fastify.register(lab11Routes, { prefix: '/api/lab11' });
+// fastify.register(lab10Routes, { prefix: '/api/lab10' });
+fastify.register(lab10Routes, {
+  prefix: '/api/lab10',
+  authenticate: fastify.authenticate
+});
+fastify.register(lab11Routes, { prefix: '/api/lab11' });
 
 // --- ЗАПУСК СЕРВERA ---
 const start = async () => {
