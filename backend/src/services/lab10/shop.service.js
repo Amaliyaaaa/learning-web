@@ -181,18 +181,18 @@ class ShopService {
 
 
   async createProduct(db, productData) {
-    const { title, price, amount, category_id, description, image_url } = productData;
+    const { title, price, amount, category_id } = productData;
     const query = `
-      INSERT INTO lab10.products (title, price, amount, category_id, description, image_url)
+      INSERT INTO lab10.products (title, price, amount, category_id)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
-    const { rows } = await db.query(query, [title, price, amount, category_id, description || null, image_url || null]);
+    const { rows } = await db.query(query, [title, price, amount, category_id]);
     return rows[0];
   }
 
   async updateProduct(db, id, productData) {
-    const { title, price, amount, category_id, description, image_url } = productData;
+    const { title, price, amount, category_id } = productData;
     const updates = [];
     const values = [];
     let paramIndex = 1;
@@ -212,14 +212,6 @@ class ShopService {
     if (category_id !== undefined) {
       updates.push(`category_id = $${paramIndex++}`);
       values.push(category_id);
-    }
-    if (description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(description);
-    }
-    if (image_url !== undefined) {
-      updates.push(`image_url = $${paramIndex++}`);
-      values.push(image_url);
     }
 
     if (updates.length === 0) {
